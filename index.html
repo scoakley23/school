@@ -1,0 +1,791 @@
+<title>Fall 2026 Gradebook</title>
+<meta name="description" content="Assignments, due dates, current grades and what-if projections for Fall 2026.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a term header with tabs; overview = course tiles + due-soon list; each course = grade summary, what-if tools, then categories as ledgers. */
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --ink: #1b1f2a;
+  --muted: #5d6475;
+  --line: #dde1e8;
+  --accent: #2f4fd8;
+  --accent-soft: #e6ebfc;
+  --good: #1f8a55;
+  --bad: #c2413a;
+  --warn: #b7791f;
+  --open: #c9ced8;
+  --c-soc: #b8456a;
+  --c-gen: #c0761c;
+  --c-ita: #2a8a6a;
+  --c-sta: #4b5fd6;
+  --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", system-ui, -apple-system, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12141b; --surface: #1b1e28; --ink: #e8eaf0; --muted: #9aa1b2; --line: #2c3040;
+    --accent: #8ea2ff; --accent-soft: #252c4a; --good: #4cc488; --bad: #f07a72; --warn: #e3a94a; --open: #3a3f50;
+    --c-soc: #e07a9c; --c-gen: #e9a04e; --c-ita: #5cc5a0; --c-sta: #8c9bff;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12141b; --surface: #1b1e28; --ink: #e8eaf0; --muted: #9aa1b2; --line: #2c3040;
+  --accent: #8ea2ff; --accent-soft: #252c4a; --good: #4cc488; --bad: #f07a72; --warn: #e3a94a; --open: #3a3f50;
+  --c-soc: #e07a9c; --c-gen: #e9a04e; --c-ita: #5cc5a0; --c-sta: #8c9bff;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1100px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 60px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.15; }
+h1 { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 1.35rem; font-weight: 700; }
+h3 { font-size: 1.05rem; font-weight: 700; }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.small { font-size: 0.85rem; }
+.label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 700; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+header.top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.save { font-size: 0.8rem; color: var(--muted); }
+nav.tabs { display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid var(--line); margin-bottom: 22px; }
+nav.tabs button { background: none; border: 0; padding: 8px 12px 10px; border-bottom: 3px solid transparent; color: var(--muted); font-weight: 700; display: flex; align-items: center; gap: 8px; }
+nav.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--tab, var(--accent)); }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--cc, var(--accent)); flex: none; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px; cursor: pointer; text-align: left; border-top: 4px solid var(--cc); }
+.tile:hover { border-color: var(--cc); }
+.tile .row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.letter { font-family: var(--display); font-weight: 700; font-size: 2.4rem; line-height: 1; }
+.letter.none { color: var(--muted); font-size: 1.4rem; }
+
+.bar { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--open); }
+.bar span { display: block; height: 100%; }
+.bar .earned { background: var(--good); }
+.bar .lost { background: var(--bad); }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.78rem; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+
+section.block { margin-top: 28px; display: flex; flex-direction: column; gap: 12px; }
+.list { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.li { display: grid; grid-template-columns: auto 1fr auto; gap: 10px 12px; align-items: center; padding: 10px 14px; border-top: 1px solid var(--line); }
+.li:first-child { border-top: 0; }
+.li .what { min-width: 0; }
+.li .what b { font-weight: 700; }
+.chip { display: inline-flex; align-items: center; gap: 5px; font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: var(--accent-soft); color: var(--ink); white-space: nowrap; }
+.chip.due-today, .chip.overdue { background: color-mix(in srgb, var(--bad) 18%, transparent); color: var(--bad); }
+.chip.due-soon { background: color-mix(in srgb, var(--warn) 20%, transparent); color: var(--warn); }
+.chip.task { background: transparent; border: 1px solid var(--line); color: var(--muted); }
+.empty { padding: 18px; color: var(--muted); }
+.week-h { padding: 8px 14px; background: var(--bg); border-top: 1px solid var(--line); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.week-h:first-child { border-top: 0; }
+
+.course-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px; align-items: start; background: var(--surface); border: 1px solid var(--line); border-left: 5px solid var(--cc); border-radius: 10px; padding: 18px; }
+.course-head .big { text-align: right; }
+.course-head .big .letter { font-size: 3.2rem; }
+.stats { display: flex; flex-wrap: wrap; gap: 18px 28px; margin-top: 12px; }
+.stat .v { font-family: var(--mono); font-size: 1.15rem; }
+.banner { border: 1px dashed var(--warn); background: color-mix(in srgb, var(--warn) 10%, transparent); border-radius: 8px; padding: 10px 14px; font-size: 0.9rem; }
+
+.tools { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.targets { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
+.target { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.target .t { font-family: var(--display); font-weight: 700; font-size: 1.1rem; }
+.target .n { font-family: var(--mono); font-size: 0.85rem; }
+.ok { color: var(--good); } .no { color: var(--bad); }
+input[type="range"] { width: 100%; accent-color: var(--cc, var(--accent)); }
+.slider-out { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+
+.cat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.cat-h { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.cat-h h3 { flex: 1 1 200px; }
+.wt { display: inline-flex; align-items: center; gap: 4px; }
+.wt input { width: 4.2em; text-align: right; }
+.scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; min-width: 620px; }
+th, td { padding: 7px 10px; text-align: left; border-top: 1px solid var(--line); vertical-align: middle; }
+thead th { border-top: 0; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); font-weight: 700; }
+td.c { text-align: center; width: 1%; }
+tr.done td.name { color: var(--muted); }
+.in { width: 100%; min-width: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; }
+.in.score { font-family: var(--mono); width: 7.5em; }
+.in.bad { border-color: var(--bad); }
+.in.date { width: 9.5em; }
+.in.ghost { background: transparent; border-color: transparent; }
+.in.ghost:hover, .in.ghost:focus { border-color: var(--line); background: var(--bg); }
+.pct { font-family: var(--mono); font-size: 0.85rem; color: var(--muted); white-space: nowrap; }
+.btn { background: var(--surface); border: 1px solid var(--line); border-radius: 7px; padding: 6px 12px; font-weight: 700; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.btn.danger { color: var(--bad); }
+.x { background: none; border: 0; color: var(--muted); padding: 4px 8px; border-radius: 6px; }
+.x:hover { color: var(--bad); background: var(--bg); }
+.addrow { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--line); background: var(--bg); }
+.addrow .in { flex: 1 1 180px; width: auto; }
+.addrow .in.date { flex: 0 0 auto; }
+.notes { margin: 0; padding-left: 18px; color: var(--muted); font-size: 0.9rem; display: grid; gap: 4px; }
+.row-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.confirm { display: inline-flex; gap: 8px; align-items: center; font-size: 0.9rem; }
+.help { font-size: 0.85rem; color: var(--muted); }
+code { font-family: var(--mono); font-size: 0.85em; background: var(--bg); padding: 1px 5px; border-radius: 4px; border: 1px solid var(--line); }
+@media (max-width: 560px) {
+  .course-head { grid-template-columns: 1fr; }
+  .course-head .big { text-align: left; }
+  h1 { font-size: 1.5rem; }
+}
+@media (prefers-reduced-motion: no-preference) { .bar span { transition: width .3s ease; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="label" id="weekLabel">Fall 2026</div>
+      <h1>Fall 2026 Gradebook</h1>
+    </div>
+    <div class="save" id="saveState">Loading…</div>
+  </header>
+  <nav class="tabs" id="tabs" role="tablist"></nav>
+  <main id="view"></main>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- Letter scales ----------
+  const HARVARD = [[93,"A"],[90,"A-"],[87,"B+"],[83,"B"],[80,"B-"],[77,"C+"],[73,"C"],[70,"C-"],[67,"D+"],[63,"D"],[60,"D-"],[0,"E"]];
+  const ITALIAN = [[94,"A"],[90,"A-"],[87,"B+"],[83,"B"],[80,"B-"],[77,"C+"],[73,"C"],[70,"C-"],[67,"D+"],[63,"D"],[60,"D-"],[0,"F"]];
+
+  // ---------- Syllabus seed ----------
+  let seq = 0;
+  const id = () => "i" + Date.now().toString(36) + (seq++).toString(36) + Math.random().toString(36).slice(2, 6);
+  const TODAY = isoToday();
+
+  function item(cat, name, due, note, opts) {
+    const o = Object.assign({ id: id(), cat, name, due: due || "", note: note || "", score: "", whatIf: "", done: false, task: false }, opts || {});
+    if (o.due && o.due < TODAY) o.done = true;
+    return o;
+  }
+  const task = (name, due, note) => item("_task", name, due, note, { task: true });
+
+  function seed() {
+    const soc = {
+      id: "soc", code: "SOCIOL 1197", name: "Poverty in the United States", color: "soc",
+      who: "Joseph Wallerstein · TF Justin Cassera (Fri section, WJH B6)",
+      scale: HARVARD, scaleNote: "Syllabus gives no cutoffs; using the standard Harvard scale.",
+      cats: [
+        { id: "lec", name: "Lecture attendance & participation", weight: 10, drop: 0 },
+        { id: "sec", name: "Section attendance & participation", weight: 20, drop: 0 },
+        { id: "fr1", name: "Field Assignment 1", weight: 10, drop: 0 },
+        { id: "fr2", name: "Field Assignment 2", weight: 15, drop: 0 },
+        { id: "fr3", name: "Field Assignment 3", weight: 15, drop: 0 },
+        { id: "fin", name: "Final Assignment", weight: 30, drop: 0 }
+      ],
+      items: [
+        item("lec", "Lecture participation (overall)", "", "Up to 2 lectures can be missed without penalty."),
+        item("sec", "Section participation (overall)", "", "Up to 2 excused section absences. TF may give short quizzes."),
+        item("fr1", "Field Report 1: Low-Wage Work", "2026-09-24", "Due before 10:30am lecture"),
+        item("fr2", "Field Report 2: Making Ends Meet or Housing", "2026-10-22", "Due before 10:30am lecture"),
+        item("fr3", "Field Report 3: Health or Legal System", "2026-11-19", "Due before 10:30am lecture"),
+        item("fin", "Final Project: field report + reflection (10–12 pp)", "2026-12-10", "Due 11:59pm"),
+        task("Section icebreaker: open discussion", "2026-10-02", "Fri section, 12pm"),
+        task("Section icebreaker: open discussion", "2026-11-13", "Fri section, 12pm")
+      ],
+      notes: [
+        "One “freebie” 3-day extension on a field report (due Sunday 11:59pm). Not for the final.",
+        "Late work drops 1/3 letter per day (A → A-).",
+        "No AI-generated writing: earns a 0.",
+        "No section Oct 30 or Nov 27."
+      ]
+    };
+    const genWeeks = ["2026-09-14","2026-09-21","2026-09-28","2026-10-05","2026-10-12","2026-10-19","2026-10-26","2026-11-02","2026-11-09","2026-11-16","2026-11-23","2026-11-30"];
+    const gen = {
+      id: "gen", code: "GENED 1089", name: "The Border: Race, Politics, and Health in Modern Mexico", color: "gen",
+      who: "Prof. Gabriela Soto Laveaga · Tue/Thu 9:00, Harvard Hall 101",
+      scale: HARVARD, scaleNote: "Syllabus gives no cutoffs; using the standard Harvard scale. A grades are capped at 20% + 4 of the class.",
+      cats: [
+        { id: "disc", name: "Weekly discussion board", weight: 10, drop: 0 },
+        { id: "map", name: "Map exercise", weight: 5, drop: 0 },
+        { id: "sca", name: "Short critical analysis", weight: 10, drop: 0 },
+        { id: "gpt", name: "ChatGPT analysis", weight: 5, drop: 0 },
+        { id: "film", name: "Brief film analysis", weight: 5, drop: 0 },
+        { id: "oral", name: "Oral history", weight: 15, drop: 0 },
+        { id: "fin", name: "Final project", weight: 30, drop: 0 },
+        { id: "part", name: "Participation, attendance & reading quizzes", weight: 20, drop: 0 }
+      ],
+      items: [
+        item("disc", "Discussion board posts (overall)", "", "Post a question, reflection or image each week by Monday 11:59pm"),
+        item("map", "Map exercise", "2026-09-15", "Due 11:59pm"),
+        item("sca", "Short critical analysis", "2026-10-16", "Due 6:00am Friday"),
+        item("gpt", "ChatGPT analysis", "2026-10-30", "Due 6:00am Friday"),
+        item("film", "Film analysis: No Más Bebés", "2026-11-13", "Due 6:00am Friday"),
+        item("oral", "Oral history", "2026-11-23", "Due 11:59pm Monday"),
+        item("fin", "Final essay / project", "2026-12-11", "Due 12pm Friday"),
+        item("part", "Participation & quizzes (overall)", "", "More than 2 unexcused absences = automatic failure"),
+        task("Discussion post (week 1)", "2026-09-04", "Due 9:00am Friday"),
+        ...genWeeks.map((d, i) => task("Discussion board post", d, "Due 11:59pm")),
+        task("Read Enrique’s Journey (whole book)", "2026-11-17", "Week 12: most of the book this week")
+      ],
+      notes: [
+        "Late papers drop one grade step per day (B+ → B) for 6 days.",
+        "One mental-health day allowed (notify TF in advance; not on a guest lecture day).",
+        "More than two unexcused absences in lecture or section = automatic failure."
+      ]
+    };
+    const ita = {
+      id: "ita", code: "ITAL 10", name: "Beginning Italian I", color: "ita",
+      who: "Parliamo italiano! · Mon–Thu",
+      scale: ITALIAN, scaleNote: "Scale from the syllabus (A = 94–100).",
+      cats: [
+        { id: "tapp", name: "TAPP (participation & preparation)", weight: 10, drop: 0 },
+        { id: "sup", name: "Parliamo italiano Supersite exercises", weight: 10, drop: 0 },
+        { id: "icq", name: "In-class quizzes (ICQs)", weight: 25, drop: 0 },
+        { id: "tha", name: "Take-home assignments (THAs)", weight: 20, drop: 0 },
+        { id: "mid", name: "Midterm exam", weight: 20, drop: 0 },
+        { id: "fin", name: "Final project & oral exam", weight: 15, drop: 0 }
+      ],
+      items: [
+        item("tapp", "TAPP (overall)", "", "Attendance is mandatory; come prepared with homework done"),
+        item("sup", "Supersite WB & Incontri (overall)", "", "Assigned most Tue–Thu"),
+        item("icq", "ICQ Prelim", "2026-09-08"),
+        item("icq", "ICQ 1 (Unità 1)", "2026-09-21"),
+        item("icq", "ICQ 2 (Unità 2)", "2026-10-05"),
+        item("icq", "ICQ 3 (Unità 4)", "2026-11-02"),
+        item("icq", "ICQ 4 (Unità 5)", "2026-11-16"),
+        item("tha", "THA Prelim", "2026-09-03"),
+        item("tha", "THA 1", "2026-09-14", "Ready before class Monday"),
+        item("tha", "THA 2", "2026-09-28", "Ready before class Monday"),
+        item("tha", "THA 3", "2026-10-13", "Tuesday (Monday is a holiday)"),
+        item("tha", "THA 4", "2026-10-26", "Ready before class Monday"),
+        item("tha", "THA 5", "2026-11-09", "Ready before class Monday"),
+        item("tha", "THA 6", "2026-11-23", "Ready before class Monday"),
+        item("mid", "Midterm exam (in class)", "2026-10-15", "Unità Prelim–3"),
+        item("fin", "Final presentation & oral exam", "2026-12-02", "Presentazioni finali Dec 2–3")
+      ],
+      notes: [
+        "ICQ grades can be raised one step by meeting the instructor in student hours (plus tutoring for B or lower).",
+        "Attending an Italian @ Harvard event = +1 point on the next quiz.",
+        "Late work is not accepted and counts as zero.",
+        "Syllabus says 4 ICQs and 6 THAs; the calendar also lists a Prelim of each. Delete any that don’t count."
+      ]
+    };
+    const sta = {
+      id: "sta", code: "STAT 100", name: "Introduction to Statistics", color: "sta",
+      who: "Details at stat-100.com",
+      placeholder: true,
+      scale: HARVARD, scaleNote: "Placeholder scale until the course’s cutoffs are added.",
+      cats: [
+        { id: "hw", name: "Problem sets", weight: 25, drop: 0 },
+        { id: "lab", name: "Labs / sections", weight: 10, drop: 0 },
+        { id: "mid", name: "Midterm(s)", weight: 30, drop: 0 },
+        { id: "fin", name: "Final / project", weight: 35, drop: 0 }
+      ],
+      items: [],
+      notes: []
+    };
+    return { v: 1, courses: [soc, gen, ita, sta] };
+  }
+
+  // ---------- Grade math ----------
+  function bands(scale) { return scale.slice().sort((a, b) => b[0] - a[0]); }
+  function letterOf(pct, scale) {
+    if (pct == null || isNaN(pct)) return null;
+    for (const [min, l] of bands(scale)) if (pct >= min - 1e-9) return l;
+    return bands(scale).at(-1)[1];
+  }
+  function letterPct(letter, scale) {
+    const b = bands(scale);
+    const i = b.findIndex(x => x[1].toUpperCase() === letter);
+    if (i < 0) return NaN;
+    if (b[i][0] === 0) return 50;
+    const top = i === 0 ? 100 : b[i - 1][0];
+    return (b[i][0] + top) / 2;
+  }
+  // Accepts "92", "92%", "18/20", "A-" (letter → middle of its band). Returns percent, null if blank, NaN if unreadable.
+  function parseScore(raw, scale) {
+    const s = String(raw || "").trim();
+    if (!s) return null;
+    const frac = s.match(/^(-?\d*\.?\d+)\s*\/\s*(\d*\.?\d+)$/);
+    if (frac) { const d = parseFloat(frac[2]); return d > 0 ? parseFloat(frac[1]) / d * 100 : NaN; }
+    const n = s.match(/^(-?\d*\.?\d+)\s*%?$/);
+    if (n) return parseFloat(n[1]);
+    if (/^[A-Fa-f][+-]?$/.test(s)) return letterPct(s.toUpperCase().replace(/^F$/, bands(scale).at(-1)[1]), scale);
+    return NaN;
+  }
+
+  // mode: "actual" | "whatif"; fill: number to assume for anything still blank (null = leave out)
+  function compute(c, mode, fill) {
+    let wsum = 0, acc = 0;
+    const per = {};
+    for (const cat of c.cats) {
+      const w = +cat.weight || 0;
+      const its = c.items.filter(i => !i.task && i.cat === cat.id);
+      let vals = [];
+      let graded = 0;
+      for (const i of its) {
+        let v = parseScore(i.score, c.scale);
+        if (v != null && !isNaN(v)) graded++;
+        if ((v == null || isNaN(v)) && mode === "whatif") v = parseScore(i.whatIf, c.scale);
+        if ((v == null || isNaN(v)) && fill != null) v = fill;
+        if (v != null && !isNaN(v)) vals.push(v);
+      }
+      const drop = Math.max(0, +cat.drop || 0);
+      if (drop && vals.length > drop) vals = vals.sort((a, b) => a - b).slice(drop);
+      const avg = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+      per[cat.id] = { avg, graded, total: its.length };
+      if (avg != null && w > 0) { wsum += w; acc += w * avg; }
+    }
+    return { pct: wsum ? acc / wsum : null, per, wsum };
+  }
+  // Share of the course already decided: earned / lost / still open (fractions of 1)
+  function breakdown(c) {
+    const total = c.cats.reduce((a, k) => a + (+k.weight || 0), 0) || 1;
+    const r = compute(c, "actual", null);
+    let earned = 0, lost = 0;
+    for (const cat of c.cats) {
+      const p = r.per[cat.id];
+      if (!p.total || p.avg == null) continue;
+      const share = (+cat.weight || 0) * (p.graded / p.total) / total;
+      earned += share * Math.min(100, Math.max(0, p.avg)) / 100;
+      lost += share * (1 - Math.min(100, Math.max(0, p.avg)) / 100);
+    }
+    return { earned, lost, open: Math.max(0, 1 - earned - lost) };
+  }
+  function needed(c, target) {
+    const f0 = compute(c, "actual", 0).pct, f100 = compute(c, "actual", 100).pct;
+    if (f0 == null || f100 == null) return { kind: "na" };
+    if (f0 >= target - 1e-9) return { kind: "locked" };
+    if (f100 < target - 1e-9 || Math.abs(f100 - f0) < 1e-9) return { kind: "out" };
+    return { kind: "need", x: (target - f0) / (f100 - f0) * 100 };
+  }
+  const hasOpen = c => c.items.some(i => !i.task && parseScore(i.score, c.scale) == null);
+
+  // ---------- Dates ----------
+  function isoToday() { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
+  const parseD = s => new Date(s + "T12:00:00");
+  const daysFrom = s => Math.round((parseD(s) - parseD(isoToday())) / 864e5);
+  const fmtDate = s => s ? parseD(s).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) : "";
+  function dueChip(i) {
+    if (!i.due) return "";
+    const d = daysFrom(i.due);
+    let cls = "", txt = fmtDate(i.due);
+    if (!i.done) {
+      if (d < 0) { cls = "overdue"; txt += " · past due"; }
+      else if (d === 0) { cls = "due-today"; txt = "Today"; }
+      else if (d === 1) { cls = "due-soon"; txt = "Tomorrow"; }
+      else if (d <= 6) { cls = "due-soon"; txt += ` · ${d} days`; }
+    }
+    return `<span class="chip ${cls}">${esc(txt)}</span>`;
+  }
+  function weekLabel() {
+    const start = parseD("2026-09-02");
+    const w = Math.floor((parseD(isoToday()) - start) / (7 * 864e5)) + 1;
+    return w >= 1 && w <= 15 ? `Fall 2026 · Week ${w}` : "Fall 2026";
+  }
+
+  // ---------- State & storage ----------
+  let state = null;
+  let tab = "overview";
+  let fillPct = {};
+  let confirmReset = false;
+  let store = null; // { kind, load(), save(data) }
+  const LS_KEY = "fall2026-gradebook";
+  const TAB_KEY = "fall2026-gradebook-tab";
+
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
+  const localStore = {
+    kind: "browser",
+    async load() { const s = lsGet(LS_KEY); return s ? JSON.parse(s) : null; },
+    async save(d) { if (!lsSet(LS_KEY, JSON.stringify(d))) throw new Error("Browser storage unavailable"); }
+  };
+
+  async function cloudStore() {
+    if (!(window.claude && typeof window.claude.use === "function")) return null;
+    try {
+      const [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+      if (!db || !user) return null;
+      const uid = await user.id();
+      if (!uid) return null;
+      const ref = db.collection("data/users/" + uid).doc("gradebook");
+      return {
+        kind: "account",
+        async load() { const s = await ref.get(); return s.exists ? s.data() : null; },
+        async save(d) { await ref.set(d); }
+      };
+    } catch (e) { return null; }
+  }
+
+  let saveTimer = null, saving = false, dirty = false;
+  function setSave(t) { document.getElementById("saveState").textContent = t; }
+  function persist() {
+    dirty = true;
+    setSave("Saving…");
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(flush, 700);
+  }
+  async function flush() {
+    if (saving || !dirty || !store) return;
+    saving = true; dirty = false;
+    try {
+      await store.save(JSON.parse(JSON.stringify(state)));
+      lsSet(LS_KEY, JSON.stringify(state));
+      setSave(store.kind === "account" ? "Saved to your account" : "Saved in this browser");
+    } catch (e) {
+      setSave("Couldn’t save: " + (e && e.message ? e.message : "storage unavailable"));
+    } finally {
+      saving = false;
+      if (dirty) flush();
+    }
+  }
+
+  // ---------- Rendering ----------
+  const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+  const fmt = (p, d = 1) => p == null || isNaN(p) ? "—" : p.toFixed(d) + "%";
+  const course = cid => state.courses.find(c => c.id === cid);
+  const ccVar = c => `--cc: var(--c-${c.color}); --tab: var(--c-${c.color});`;
+
+  function renderTabs() {
+    const t = [["overview", "Overview", null], ...state.courses.map(c => [c.id, c.code, c]), ["planner", "All due dates", null]];
+    document.getElementById("tabs").innerHTML = t.map(([k, label, c]) =>
+      `<button role="tab" data-tab="${k}" aria-selected="${tab === k}" style="${c ? ccVar(c) : ""}">${c ? '<span class="dot"></span>' : ""}${esc(label)}</button>`
+    ).join("");
+  }
+
+  function barHTML(c) {
+    const b = breakdown(c);
+    return `<div class="bar" role="img" aria-label="${Math.round(b.earned * 100)}% of the course earned, ${Math.round(b.lost * 100)}% lost, ${Math.round(b.open * 100)}% still open">
+      <span class="earned" style="width:${b.earned * 100}%"></span><span class="lost" style="width:${b.lost * 100}%"></span></div>`;
+  }
+  const legend = `<div class="legend"><span><i style="background:var(--good)"></i>Points earned</span><span><i style="background:var(--bad)"></i>Points lost</span><span><i style="background:var(--open)"></i>Still to come</span></div>`;
+
+  function itemRow(c, i, showCourse) {
+    return `<div class="li">
+      <input type="checkbox" data-act="done" data-c="${c.id}" data-i="${i.id}" ${i.done ? "checked" : ""} aria-label="Mark ${esc(i.name)} done">
+      <div class="what">
+        ${showCourse ? `<span class="chip" style="${ccVar(c)}background:color-mix(in srgb, var(--cc) 16%, transparent)">${esc(c.code)}</span> ` : ""}
+        <b>${esc(i.name)}</b>${i.task ? ' <span class="chip task">to-do</span>' : ""}
+        ${i.note ? `<div class="small muted">${esc(i.note)}</div>` : ""}
+      </div>
+      ${dueChip(i)}
+    </div>`;
+  }
+
+  function allDated() {
+    const out = [];
+    for (const c of state.courses) for (const i of c.items) if (i.due) out.push({ c, i });
+    return out.sort((a, b) => a.i.due.localeCompare(b.i.due) || a.c.code.localeCompare(b.c.code));
+  }
+
+  function renderOverview() {
+    const tiles = state.courses.map(c => {
+      const r = compute(c, "actual", null), w = compute(c, "whatif", null);
+      const L = letterOf(r.pct, c.scale);
+      const next = c.items.filter(i => i.due && !i.done && i.due >= isoToday()).sort((a, b) => a.due.localeCompare(b.due))[0];
+      return `<button class="tile" data-tab="${c.id}" style="${ccVar(c)}">
+        <div class="row"><span class="label">${esc(c.code)}</span>${c.placeholder ? '<span class="chip due-soon">needs setup</span>' : ""}</div>
+        <div class="row">
+          <div><div class="letter ${L ? "" : "none"}">${L ? esc(L) : "No grades yet"}</div></div>
+          <div class="num" style="text-align:right">${fmt(r.pct)}${w.pct != null && Math.abs((w.pct || 0) - (r.pct || 0)) > 0.05 ? `<div class="small muted">what-if ${fmt(w.pct)}</div>` : ""}</div>
+        </div>
+        ${barHTML(c)}
+        <div class="small muted">${next ? `Next: <b style="color:var(--ink)">${esc(next.name)}</b>, ${esc(fmtDate(next.due))}` : "Nothing dated coming up"}</div>
+      </button>`;
+    }).join("");
+
+    const today = isoToday();
+    const all = allDated().filter(x => !x.i.done);
+    const past = all.filter(x => x.i.due < today);
+    const soon = all.filter(x => x.i.due >= today && daysFrom(x.i.due) <= 14);
+
+    return `
+      <div class="grid">${tiles}</div>
+      <div style="margin-top:10px">${legend}</div>
+      ${past.length ? `<section class="block"><h2>Not checked off yet</h2><div class="list">${past.map(x => itemRow(x.c, x.i, true)).join("")}</div></section>` : ""}
+      <section class="block">
+        <div class="row-actions" style="justify-content:space-between"><h2>Due in the next two weeks</h2><button class="btn" data-tab="planner">See every date</button></div>
+        <div class="list">${soon.length ? soon.map(x => itemRow(x.c, x.i, true)).join("") : '<div class="empty">Nothing due in the next 14 days.</div>'}</div>
+      </section>
+      <section class="block">
+        <h2>How to use this</h2>
+        <ul class="notes">
+          <li>Open a course and type a grade in <b>Score</b> as <code>92</code>, <code>18/20</code> or a letter like <code>A-</code>.</li>
+          <li>Put a guess in <b>What if</b> on anything not graded yet to see your projected grade.</li>
+          <li>Each course shows what average you need on the rest of the work to land each letter grade.</li>
+          <li>Tick the box when you submit something. Past due dates start out ticked.</li>
+        </ul>
+      </section>`;
+  }
+
+  function renderPlanner() {
+    const hide = lsGet("gb-hide-done") === "1";
+    const rows = allDated().filter(x => !hide || !x.i.done);
+    let html = "", wk = "";
+    for (const x of rows) {
+      const d = parseD(x.i.due);
+      const mon = new Date(d); mon.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+      const key = mon.toISOString().slice(0, 10);
+      if (key !== wk) { wk = key; html += `<div class="week-h">Week of ${esc(mon.toLocaleDateString(undefined, { month: "short", day: "numeric" }))}</div>`; }
+      html += itemRow(x.c, x.i, true);
+    }
+    return `<section class="block" style="margin-top:0">
+      <div class="row-actions" style="justify-content:space-between">
+        <h2>All due dates</h2>
+        <label class="small"><input type="checkbox" id="hideDone" ${hide ? "checked" : ""}> Hide finished</label>
+      </div>
+      <div class="list">${html || '<div class="empty">Everything is checked off.</div>'}</div>
+    </section>`;
+  }
+
+  function renderCourse(c) {
+    const r = compute(c, "actual", null), w = compute(c, "whatif", null);
+    const L = letterOf(r.pct, c.scale), WL = letterOf(w.pct, c.scale);
+    const totalW = c.cats.reduce((a, k) => a + (+k.weight || 0), 0);
+    const b = breakdown(c);
+    const fp = fillPct[c.id] != null ? fillPct[c.id] : 90;
+    const fillRes = compute(c, "actual", fp).pct;
+    const open = hasOpen(c);
+
+    const targetLetters = bands(c.scale).filter(x => x[0] >= 70);
+    const targets = targetLetters.map(([min, l]) => {
+      const n = needed(c, min);
+      let txt;
+      if (n.kind === "locked") txt = `<span class="ok">Locked in</span>`;
+      else if (n.kind === "out") txt = `<span class="no">Out of reach</span>`;
+      else if (n.kind === "need") txt = n.x > 100 ? `<span class="no">Out of reach</span>` : `Need <b>${Math.max(0, Math.ceil(n.x - 1e-9))}%</b>`;
+      else txt = `<span class="muted">Add scores</span>`;
+      return `<div class="target"><div class="t">${esc(l)}</div><div class="n">${txt}</div><div class="small muted">${min}%+</div></div>`;
+    }).join("");
+
+    const cats = c.cats.map(cat => {
+      const p = compute(c, "actual", null).per[cat.id];
+      const its = c.items.filter(i => !i.task && i.cat === cat.id).sort((a, b) => (a.due || "9").localeCompare(b.due || "9"));
+      const rows = its.map(i => {
+        const sv = parseScore(i.score, c.scale), wv = parseScore(i.whatIf, c.scale);
+        return `<tr class="${i.done ? "done" : ""}">
+          <td class="c"><input type="checkbox" data-act="done" data-c="${c.id}" data-i="${i.id}" ${i.done ? "checked" : ""} aria-label="Mark ${esc(i.name)} done"></td>
+          <td class="name"><input class="in ghost" id="n-${i.id}" data-act="name" data-c="${c.id}" data-i="${i.id}" value="${esc(i.name)}" aria-label="Assignment name">${i.note ? `<div class="small muted" style="padding-left:9px">${esc(i.note)}</div>` : ""}</td>
+          <td><input class="in date" type="date" id="d-${i.id}" data-act="due" data-c="${c.id}" data-i="${i.id}" value="${esc(i.due)}" aria-label="Due date"></td>
+          <td><input class="in score ${sv != null && isNaN(sv) ? "bad" : ""}" id="s-${i.id}" data-act="score" data-c="${c.id}" data-i="${i.id}" value="${esc(i.score)}" placeholder="—" aria-label="Score"></td>
+          <td><input class="in score ${wv != null && isNaN(wv) ? "bad" : ""}" id="w-${i.id}" data-act="whatIf" data-c="${c.id}" data-i="${i.id}" value="${esc(i.whatIf)}" placeholder="${sv != null ? "" : "guess"}" ${sv != null && !isNaN(sv) ? "disabled" : ""} aria-label="What-if score"></td>
+          <td class="pct">${sv != null && !isNaN(sv) ? sv.toFixed(1) + "%" : wv != null && !isNaN(wv) ? `<span title="what-if">~${wv.toFixed(1)}%</span>` : ""}</td>
+          <td class="c"><button class="x" data-act="del" data-c="${c.id}" data-i="${i.id}" aria-label="Delete ${esc(i.name)}">✕</button></td>
+        </tr>`;
+      }).join("");
+      return `<div class="cat">
+        <div class="cat-h">
+          <h3>${esc(cat.name)}</h3>
+          <span class="pct">avg ${fmt(p.avg)}</span>
+          <label class="wt small">Weight <input class="in num" type="number" min="0" max="100" step="0.5" id="cw-${c.id}-${cat.id}" data-act="weight" data-c="${c.id}" data-k="${cat.id}" value="${esc(cat.weight)}">%</label>
+          <label class="wt small" title="Drop this many lowest scores">Drop lowest <input class="in num" type="number" min="0" max="10" step="1" id="cd-${c.id}-${cat.id}" data-act="drop" data-c="${c.id}" data-k="${cat.id}" value="${esc(cat.drop || 0)}" style="width:3.4em"></label>
+          <button class="x" data-act="delcat" data-c="${c.id}" data-k="${cat.id}" aria-label="Delete category ${esc(cat.name)}">✕</button>
+        </div>
+        ${its.length ? `<div class="scroll"><table>
+          <thead><tr><th class="c">Done</th><th>Assignment</th><th>Due</th><th>Score</th><th>What if</th><th></th><th></th></tr></thead>
+          <tbody>${rows}</tbody></table></div>` : `<div class="empty small">No assignments in this category yet.</div>`}
+        <form class="addrow" data-act="add" data-c="${c.id}" data-k="${cat.id}">
+          <input class="in" id="an-${c.id}-${cat.id}" name="name" placeholder="Add an assignment…" aria-label="New assignment name" required>
+          <input class="in date" type="date" id="ad-${c.id}-${cat.id}" name="due" aria-label="New assignment due date">
+          <button class="btn" type="submit">Add</button>
+        </form>
+      </div>`;
+    }).join("");
+
+    const tasks = c.items.filter(i => i.task).sort((a, b) => (a.due || "").localeCompare(b.due || ""));
+
+    return `<div style="${ccVar(c)}">
+      <div class="course-head">
+        <div style="min-width:0">
+          <div class="label">${esc(c.code)}</div>
+          <h2>${esc(c.name)}</h2>
+          <div class="small muted">${esc(c.who || "")}</div>
+          <div class="stats">
+            <div class="stat"><div class="label">Current</div><div class="v">${fmt(r.pct, 2)}</div></div>
+            <div class="stat"><div class="label">With what-ifs</div><div class="v">${fmt(w.pct, 2)}${WL ? ` · ${esc(WL)}` : ""}</div></div>
+            <div class="stat"><div class="label">Course decided</div><div class="v">${Math.round((b.earned + b.lost) * 100)}%</div></div>
+            <div class="stat"><div class="label">Floor / ceiling</div><div class="v">${fmt(compute(c, "actual", 0).pct, 1)} / ${fmt(compute(c, "actual", 100).pct, 1)}</div></div>
+          </div>
+        </div>
+        <div class="big"><div class="label">Grade now</div><div class="letter ${L ? "" : "none"}">${L ? esc(L) : "—"}</div></div>
+      </div>
+      <div style="margin-top:12px; display:grid; gap:8px">${barHTML(c)}${legend}</div>
+      ${c.placeholder ? `<div class="banner" style="margin-top:14px"><b>Placeholder setup.</b> I couldn’t open <a href="https://stat-100.com/" target="_blank" rel="noopener">stat-100.com</a>, so these categories and weights are guesses. Change the weights below to match the course page and add assignments, or paste the grading section to Claude to fill it in.</div>` : ""}
+      ${totalW !== 100 ? `<div class="banner" style="margin-top:14px">Category weights add up to <b>${totalW}%</b>, not 100%. Grades are scaled to the weights entered.</div>` : ""}
+
+      <section class="block">
+        <div class="tools">
+          <div class="panel">
+            <h3>What you need on the rest</h3>
+            <div class="help">Average needed on every assignment not yet graded to finish with each grade.</div>
+            ${open ? `<div class="targets">${targets}</div>` : `<div class="muted">Everything has a score. Your grade is final at ${fmt(r.pct)}.</div>`}
+          </div>
+          <div class="panel">
+            <h3>If I average…</h3>
+            <div class="help">Drag to assume a score on everything not yet graded.</div>
+            <input type="range" min="50" max="100" step="1" id="fill-${c.id}" data-act="fill" data-c="${c.id}" value="${fp}" aria-label="Assumed average on remaining work">
+            <div class="slider-out"><span class="num" id="fillv-${c.id}">${fp}% on the rest</span><span>→ <b class="num" id="fillr-${c.id}">${fmt(fillRes, 1)} · ${esc(letterOf(fillRes, c.scale) || "—")}</b></span></div>
+            <div class="small muted">${esc(c.scaleNote || "")}</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2>Assignments & grades</h2>
+        ${cats}
+        <form class="addrow" data-act="addcat" data-c="${c.id}" style="border:1px dashed var(--line); border-radius:10px">
+          <input class="in" id="acn-${c.id}" name="name" placeholder="New category name" aria-label="New category name" required>
+          <input class="in num" id="acw-${c.id}" name="weight" type="number" min="0" max="100" step="0.5" placeholder="Weight %" aria-label="New category weight" style="flex:0 0 7em">
+          <button class="btn" type="submit">Add category</button>
+        </form>
+      </section>
+
+      <section class="block">
+        <h2>To-dos & reminders</h2>
+        <div class="help">Not graded on their own; they show up in the due-date lists.</div>
+        <div class="list">${tasks.length ? tasks.map(i => `<div class="li">
+            <input type="checkbox" data-act="done" data-c="${c.id}" data-i="${i.id}" ${i.done ? "checked" : ""} aria-label="Mark ${esc(i.name)} done">
+            <div class="what"><b>${esc(i.name)}</b>${i.note ? `<div class="small muted">${esc(i.note)}</div>` : ""}</div>
+            <div class="row-actions">${dueChip(i)}<button class="x" data-act="del" data-c="${c.id}" data-i="${i.id}" aria-label="Delete ${esc(i.name)}">✕</button></div>
+          </div>`).join("") : '<div class="empty">No reminders.</div>'}
+          <form class="addrow" data-act="addtask" data-c="${c.id}">
+            <input class="in" id="atn-${c.id}" name="name" placeholder="Add a reminder…" aria-label="New reminder" required>
+            <input class="in date" type="date" id="atd-${c.id}" name="due" aria-label="Reminder date">
+            <button class="btn" type="submit">Add</button>
+          </form>
+        </div>
+      </section>
+
+      ${c.notes && c.notes.length ? `<section class="block"><h2>Syllabus policies</h2><ul class="notes">${c.notes.map(n => `<li>${esc(n)}</li>`).join("")}</ul></section>` : ""}
+
+      <section class="block">
+        <div class="row-actions">
+          ${confirmReset === c.id
+            ? `<span class="confirm">Reset ${esc(c.code)} to the syllabus? Your scores for this course will be erased. <button class="btn danger" data-act="reset-yes" data-c="${c.id}">Reset</button><button class="btn" data-act="reset-no">Cancel</button></span>`
+            : `<button class="btn danger" data-act="reset" data-c="${c.id}">Reset this course to the syllabus</button>`}
+        </div>
+      </section>
+    </div>`;
+  }
+
+  function render() {
+    renderTabs();
+    const v = document.getElementById("view");
+    const sx = window.scrollX, sy = window.scrollY;
+    const focusId = document.activeElement && document.activeElement.id;
+    if (tab === "overview") v.innerHTML = renderOverview();
+    else if (tab === "planner") v.innerHTML = renderPlanner();
+    else { const c = course(tab); v.innerHTML = c ? renderCourse(c) : renderOverview(); }
+    window.scrollTo(sx, sy);
+    if (focusId) { const el = document.getElementById(focusId); if (el) el.focus({ preventScroll: true }); }
+  }
+
+  function go(t) {
+    tab = t; confirmReset = false; lsSet(TAB_KEY, t);
+    render(); window.scrollTo(0, 0);
+  }
+
+  // ---------- Events ----------
+  document.addEventListener("click", e => {
+    const t = e.target.closest("[data-tab]");
+    if (t) { go(t.dataset.tab); return; }
+    const a = e.target.closest("[data-act]");
+    if (!a) return;
+    const c = a.dataset.c && course(a.dataset.c);
+    switch (a.dataset.act) {
+      case "del": c.items = c.items.filter(i => i.id !== a.dataset.i); persist(); render(); break;
+      case "delcat":
+        c.cats = c.cats.filter(k => k.id !== a.dataset.k);
+        c.items = c.items.filter(i => i.task || i.cat !== a.dataset.k);
+        persist(); render(); break;
+      case "reset": confirmReset = c.id; render(); break;
+      case "reset-no": confirmReset = false; render(); break;
+      case "reset-yes": {
+        const fresh = seed().courses.find(x => x.id === c.id);
+        state.courses = state.courses.map(x => x.id === c.id ? fresh : x);
+        confirmReset = false; persist(); render(); break;
+      }
+    }
+  });
+  document.addEventListener("change", e => {
+    const el = e.target;
+    if (el.id === "hideDone") { lsSet("gb-hide-done", el.checked ? "1" : "0"); render(); return; }
+    const act = el.dataset && el.dataset.act;
+    if (!act) return;
+    const c = course(el.dataset.c);
+    if (!c) return;
+    const it = el.dataset.i && c.items.find(i => i.id === el.dataset.i);
+    const cat = el.dataset.k && c.cats.find(k => k.id === el.dataset.k);
+    if (act === "done" && it) it.done = el.checked;
+    else if (act === "score" && it) { it.score = el.value.trim(); if (parseScore(it.score, c.scale) != null) it.done = true; }
+    else if (act === "whatIf" && it) it.whatIf = el.value.trim();
+    else if (act === "name" && it) it.name = el.value.trim() || it.name;
+    else if (act === "due" && it) it.due = el.value;
+    else if (act === "weight" && cat) cat.weight = Math.max(0, parseFloat(el.value) || 0);
+    else if (act === "drop" && cat) cat.drop = Math.max(0, parseInt(el.value, 10) || 0);
+    else if (act === "fill") return;
+    else return;
+    persist(); render();
+  });
+  document.addEventListener("input", e => {
+    const el = e.target;
+    if (el.dataset && el.dataset.act === "fill") {
+      const c = course(el.dataset.c), v = +el.value;
+      fillPct[c.id] = v;
+      const r = compute(c, "actual", v).pct;
+      document.getElementById("fillv-" + c.id).textContent = v + "% on the rest";
+      document.getElementById("fillr-" + c.id).textContent = `${fmt(r, 1)} · ${letterOf(r, c.scale) || "—"}`;
+    }
+  });
+  document.addEventListener("submit", e => {
+    const f = e.target.closest("form[data-act]");
+    if (!f) return;
+    e.preventDefault();
+    const c = course(f.dataset.c);
+    const name = (f.elements.name.value || "").trim();
+    if (!c || !name) return;
+    if (f.dataset.act === "add") c.items.push(item(f.dataset.k, name, f.elements.due.value));
+    else if (f.dataset.act === "addtask") c.items.push(task(name, f.elements.due.value));
+    else if (f.dataset.act === "addcat") c.cats.push({ id: id(), name, weight: Math.max(0, parseFloat(f.elements.weight.value) || 0), drop: 0 });
+    persist(); render();
+    const again = document.getElementById(f.querySelector("input").id);
+    if (again) again.focus();
+  });
+
+  // ---------- Boot ----------
+  async function boot() {
+    document.getElementById("weekLabel").textContent = weekLabel();
+    const saved = lsGet(TAB_KEY);
+    state = seed();
+    if (saved) tab = saved;
+    if (tab !== "overview" && tab !== "planner" && !course(tab)) tab = "overview";
+    // Show browser copy right away, then switch to the account copy when it answers.
+    store = localStore;
+    try { const local = await localStore.load(); if (local && local.courses) state = local; } catch (e) {}
+    render();
+    setSave("Saved in this browser");
+    const cloud = await cloudStore();
+    if (cloud) {
+      try {
+        const remote = await cloud.load();
+        store = cloud;
+        if (remote && remote.courses) { state = remote; render(); setSave("Saved to your account"); }
+        else setSave("Changes will save to your account");
+      } catch (e) {
+        store = localStore;
+        setSave("Saved in this browser (account storage unavailable)");
+      }
+    }
+  }
+  boot();
+})();
+</script>

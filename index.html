@@ -178,6 +178,12 @@ code { font-family: var(--mono); font-size: 0.85em; background: var(--bg); paddi
   }
   const task = (name, due, note) => item("_task", name, due, note, { task: true });
 
+  // Weekly Stat 100 homework, due 1:25pm Mondays. Dates assume the first one was due Sep 14.
+  function statHomework() {
+    return STAT_HW_DATES.map((d, n) => item("hw", `Homework ${n + 1}`, d, d === "2026-10-12" ? "Due 1:25pm · Monday is a holiday, check the Schedule page" : "Due 1:25pm"));
+  }
+  const STAT_HW_DATES = ["2026-09-14","2026-09-21","2026-09-28","2026-10-05","2026-10-12","2026-10-19","2026-10-26","2026-11-02","2026-11-09","2026-11-16","2026-11-23","2026-11-30"];
+
   function seed() {
     const soc = {
       id: "soc", code: "SOCIOL 1197", name: "Poverty in the United States", color: "soc",
@@ -279,9 +285,8 @@ code { font-family: var(--mono); font-size: 0.85em; background: var(--bg); paddi
         "Syllabus says 4 ICQs and 6 THAs; the calendar also lists a Prelim of each. Delete any that don’t count."
       ]
     };
-    const hwMondays = ["2026-10-12","2026-10-19","2026-10-26","2026-11-02","2026-11-09","2026-11-16","2026-11-23","2026-11-30"];
     const sta = {
-      id: "sta", code: "STAT 100", name: "Introduction to Statistics", color: "sta", rev: 2,
+      id: "sta", code: "STAT 100", name: "Introduction to Statistics", color: "sta", rev: 3,
       who: "Policies and schedule at stat-100.com",
       scale: HARVARD, scaleNote: "The course site gives no letter cutoffs; using the standard Harvard scale.",
       cats: [
@@ -295,12 +300,11 @@ code { font-family: var(--mono); font-size: 0.85em; background: var(--bg); paddi
       items: [
         item("quiz", "In-class quizzes (overall)", "", "Answer every question in lecture for full credit"),
         item("sec", "Section activities (overall)", "", "Submit by the end of each section"),
-        item("hw", "Homework average (overall)", "", "Due 1:25pm Mondays. Add individual homeworks here if you want each one tracked."),
+        ...statHomework(),
         item("mid", "Midterm exam", "2026-10-07", "1:30–2:45pm, in person, closed book, no calculator"),
         item("fin", "Final exam", "", "Date TBD · in person, closed book, no calculator"),
         item("proj", "Team project (overall)", "", "Several parts in the second half of the term, including a proposal and a presentation"),
-        task("Stat 100 team project proposal", "2026-11-04", "Due 5:00pm"),
-        ...hwMondays.map(d => task("Stat 100 homework due", d, "Due 1:25pm"))
+        task("Stat 100 team project proposal", "2026-11-04", "Due 5:00pm")
       ],
       notes: [
         "Homework is due Mondays at 1:25pm. Start it after Wednesday’s lecture.",
@@ -788,6 +792,13 @@ code { font-family: var(--mono); font-size: 0.85em; background: var(--bg); paddi
       const f = fresh.courses.find(x => x.id === c.id);
       const untouched = !c.items.some(i => String(i.score || "").trim() || String(i.whatIf || "").trim());
       if (f && (f.rev || 1) > (c.rev || 1) && untouched) { changed = true; return f; }
+      // Stat 100 rev 3 splits homework into weekly assignments; keep any scores already entered elsewhere.
+      if (c.id === "sta" && (c.rev || 1) < 3) {
+        c.items = c.items.filter(i => !(i.cat === "hw" && !String(i.score || "").trim() && !String(i.whatIf || "").trim()) && i.name !== "Stat 100 homework due");
+        if (!c.cats.some(k => k.id === "hw")) c.cats.push({ id: "hw", name: "Weekly homework", weight: 10, drop: 0 });
+        c.items.push(...statHomework());
+        c.rev = 3; changed = true;
+      }
       return c;
     });
     if (changed) setTimeout(persist, 0);

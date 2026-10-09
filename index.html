@@ -251,7 +251,7 @@ code { font-family: var(--mono); font-size: 0.85em; background: var(--bg); paddi
         { id: "sup", name: "Parliamo italiano Supersite exercises", weight: 10, drop: 0 },
         { id: "icq", name: "In-class quizzes (ICQs)", weight: 25, drop: 0 },
         { id: "tha", name: "Take-home assignments (THAs)", weight: 20, drop: 0 },
-        { id: "mid", name: "Midterm exam", weight: 20, drop: 0 },
+        { id: "mid", name: "Midterm exam", weight: 25, drop: 0 },
         { id: "fin", name: "Final project & oral exam", weight: 15, drop: 0 }
       ],
       items: [
@@ -279,19 +279,38 @@ code { font-family: var(--mono); font-size: 0.85em; background: var(--bg); paddi
         "Syllabus says 4 ICQs and 6 THAs; the calendar also lists a Prelim of each. Delete any that don’t count."
       ]
     };
+    const hwMondays = ["2026-10-12","2026-10-19","2026-10-26","2026-11-02","2026-11-09","2026-11-16","2026-11-23","2026-11-30"];
     const sta = {
-      id: "sta", code: "STAT 100", name: "Introduction to Statistics", color: "sta",
-      who: "Details at stat-100.com",
-      placeholder: true,
-      scale: HARVARD, scaleNote: "Placeholder scale until the course’s cutoffs are added.",
+      id: "sta", code: "STAT 100", name: "Introduction to Statistics", color: "sta", rev: 2,
+      who: "Policies and schedule at stat-100.com",
+      scale: HARVARD, scaleNote: "The course site gives no letter cutoffs; using the standard Harvard scale.",
       cats: [
-        { id: "hw", name: "Problem sets", weight: 25, drop: 0 },
-        { id: "lab", name: "Labs / sections", weight: 10, drop: 0 },
-        { id: "mid", name: "Midterm(s)", weight: 30, drop: 0 },
-        { id: "fin", name: "Final / project", weight: 35, drop: 0 }
+        { id: "quiz", name: "In-class quizzes (graded for participation)", weight: 10, drop: 0 },
+        { id: "sec", name: "Section activities (graded for completion)", weight: 10, drop: 0 },
+        { id: "hw", name: "Weekly homework", weight: 10, drop: 0 },
+        { id: "mid", name: "Midterm exam", weight: 25, drop: 0 },
+        { id: "fin", name: "Final exam", weight: 25, drop: 0 },
+        { id: "proj", name: "Team project", weight: 20, drop: 0 }
       ],
-      items: [],
-      notes: []
+      items: [
+        item("quiz", "In-class quizzes (overall)", "", "Answer every question in lecture for full credit"),
+        item("sec", "Section activities (overall)", "", "Submit by the end of each section"),
+        item("hw", "Homework average (overall)", "", "Due 1:25pm Mondays. Add individual homeworks here if you want each one tracked."),
+        item("mid", "Midterm exam", "2026-10-07", "1:30–2:45pm, in person, closed book, no calculator"),
+        item("fin", "Final exam", "", "Date TBD · in person, closed book, no calculator"),
+        item("proj", "Team project (overall)", "", "Several parts in the second half of the term, including a proposal and a presentation"),
+        task("Stat 100 team project proposal", "2026-11-04", "Due 5:00pm"),
+        ...hwMondays.map(d => task("Stat 100 homework due", d, "Due 1:25pm"))
+      ],
+      notes: [
+        "Homework is due Mondays at 1:25pm. Start it after Wednesday’s lecture.",
+        "Late work is accepted only for homework: you have a 48-hour late allowance for the whole term (e.g. 24h + 12h + 12h). Track how much you’ve used.",
+        "Regrade requests within one week of feedback (48 hours for the final exam).",
+        "In-class quizzes are graded on participation, not correctness. Having someone else answer for you is misconduct.",
+        "Section work is graded on completion, but problems the CAs solved should show a correct solution.",
+        "Generative AI is allowed on homework with limits (course site section 4.1).",
+        "Exams are closed book with no calculator."
+      ]
     };
     return { v: 1, courses: [soc, gen, ita, sta] };
   }
@@ -619,7 +638,7 @@ code { font-family: var(--mono); font-size: 0.85em; background: var(--bg); paddi
         <div class="big"><div class="label">Grade now</div><div class="letter ${L ? "" : "none"}">${L ? esc(L) : "—"}</div></div>
       </div>
       <div style="margin-top:12px; display:grid; gap:8px">${barHTML(c)}${legend}</div>
-      ${c.placeholder ? `<div class="banner" style="margin-top:14px"><b>Placeholder setup.</b> I couldn’t open <a href="https://stat-100.com/" target="_blank" rel="noopener">stat-100.com</a>, so these categories and weights are guesses. Change the weights below to match the course page and add assignments, or paste the grading section to Claude to fill it in.</div>` : ""}
+      ${c.placeholder ? `<div class="banner" style="margin-top:14px"><b>Weights are placeholders.</b> The categories and dates come from the <a href="https://stat-100.com/policies.html" target="_blank" rel="noopener">course policies</a>, but the percentages are guesses. Change each weight below to match the Grading section of that page.</div>` : ""}
       ${totalW !== 100 ? `<div class="banner" style="margin-top:14px">Category weights add up to <b>${totalW}%</b>, not 100%. Grades are scaled to the weights entered.</div>` : ""}
 
       <section class="block">
@@ -761,6 +780,20 @@ code { font-family: var(--mono); font-size: 0.85em; background: var(--bg); paddi
     if (again) again.focus();
   });
 
+  // Swap in a revised syllabus setup for any course the user hasn't entered scores in yet.
+  function migrate(saved) {
+    const fresh = seed();
+    let changed = false;
+    saved.courses = saved.courses.map(c => {
+      const f = fresh.courses.find(x => x.id === c.id);
+      const untouched = !c.items.some(i => String(i.score || "").trim() || String(i.whatIf || "").trim());
+      if (f && (f.rev || 1) > (c.rev || 1) && untouched) { changed = true; return f; }
+      return c;
+    });
+    if (changed) setTimeout(persist, 0);
+    return saved;
+  }
+
   // ---------- Boot ----------
   async function boot() {
     document.getElementById("weekLabel").textContent = weekLabel();
@@ -770,7 +803,7 @@ code { font-family: var(--mono); font-size: 0.85em; background: var(--bg); paddi
     if (tab !== "overview" && tab !== "planner" && !course(tab)) tab = "overview";
     // Show browser copy right away, then switch to the account copy when it answers.
     store = localStore;
-    try { const local = await localStore.load(); if (local && local.courses) state = local; } catch (e) {}
+    try { const local = await localStore.load(); if (local && local.courses) state = migrate(local); } catch (e) {}
     render();
     setSave("Saved in this browser");
     const cloud = await cloudStore();
@@ -778,7 +811,7 @@ code { font-family: var(--mono); font-size: 0.85em; background: var(--bg); paddi
       try {
         const remote = await cloud.load();
         store = cloud;
-        if (remote && remote.courses) { state = remote; render(); setSave("Saved to your account"); }
+        if (remote && remote.courses) { state = migrate(remote); render(); setSave("Saved to your account"); }
         else setSave("Changes will save to your account");
       } catch (e) {
         store = localStore;
